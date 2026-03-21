@@ -68,12 +68,14 @@ docker run -d \
 
 ### 4. Authenticate Tailscale
 
+**Important**: We use regular SSH through Tailscale network (not Tailscale SSH feature) for better compatibility with Docker container setup.
+
 Choose one method:
 
 #### Option A: Interactive (First-time setup)
 
 ```bash
-docker exec tailscale tailscale up --ssh --accept-dns=false
+docker exec tailscale tailscale up --ssh=false --accept-dns=false
 ```
 
 Visit the URL that appears to authenticate.
@@ -84,7 +86,7 @@ Visit the URL that appears to authenticate.
 2. Run:
 
 ```bash
-docker exec tailscale tailscale up --ssh --accept-dns=false --auth-key=YOUR_KEY
+docker exec tailscale tailscale up --ssh=false --accept-dns=false --auth-key=YOUR_KEY
 ```
 
 ### 5. Verify setup
@@ -134,19 +136,34 @@ http://<tailscale-ip>:3000
 http://<tailscale-ip>:8090
 ```
 
-## Tailscale SSH
+## SSH Access via Tailscale
 
-Tailscale SSH is enabled, providing secure access without public SSH port:
+We use **regular SSH through Tailscale network** (not Tailscale SSH feature). This provides the same security - SSH is only accessible via Tailscale VPN - while maintaining full compatibility with your existing SSH keys and configuration.
 
-1. Install Tailscale on your local machine: https://tailscale.com/download
-2. Log in to Tailscale
-3. Connect directly:
+### How it works
 
-```bash
-ssh dzikran@<vps-tailscale-ip>
+1. Firewall blocks port 22 from public internet
+2. Firewall allows port 22 from Tailscale network (100.64.0.0/10)
+3. You SSH to the Tailscale IP, not the public IP
+
+### Connect from Windows
+
+```powershell
+# From PowerShell or Command Prompt
+ssh dzikran@100.76.59.86
 ```
 
-Your existing SSH keys in `~/.ssh/` will work automatically.
+### Connect from Linux/Mac
+
+```bash
+ssh dzikran@100.76.59.86
+```
+
+Your existing SSH keys in `~/.ssh/` (or `C:\Users\YourName\.ssh\` on Windows) work automatically.
+
+### Why not Tailscale SSH?
+
+Tailscale SSH requires user mapping which is complex with Docker containers. Using regular SSH through Tailscale provides equivalent security with simpler setup.
 
 ## Managing Tailscale
 
@@ -218,11 +235,12 @@ Should show a reject rule. If not, re-run the firewall configuration.
 
 ## Security Best Practices
 
-1. **Use Tailscale SSH**: Never expose port 22 publicly
+1. **Never expose SSH publicly**: Only access via Tailscale IP
 2. **Keep Tailscale updated**: Run `docker pull tailscale/tailscale:latest` regularly
 3. **Use auth keys**: For automated deployments, use Tailscale auth keys with expiration
 4. **Monitor access**: Check Tailscale admin console for connected devices
 5. **Enable ACLs**: Use Tailscale ACLs to restrict which devices can access this VPS
+6. **Verify firewall**: Regularly check that port 22 is blocked from public
 
 ## Resources
 
