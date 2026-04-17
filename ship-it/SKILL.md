@@ -56,7 +56,7 @@ git log "origin/$to_branch..$from_branch" --oneline
 ### Step 3: Fetch and Select Related Issues
 
 ```bash
-gh issue list --limit 50 --json number,title,labels
+gh issue list --state open --limit 50 --json number,title,labels
 ```
 
 Present the list to the user and ask which issues are related to this PR. Collect:
@@ -64,8 +64,6 @@ Present the list to the user and ask which issues are related to this PR. Collec
 - Labels from selected issues (to apply to PR)
 
 ### Step 4: Generate PR Title and Description
-
-**The agent generates this directly — no external API calls.**
 
 Analyze the diff, commit messages, and linked issues to produce:
 
