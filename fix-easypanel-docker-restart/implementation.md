@@ -36,7 +36,6 @@ echo "Restoring EasyPanel configuration for $CONTAINER_NAME..."
 # IMPORTANT: Container home is /home/dzikran, NOT /root.
 # Using ~/ or /root/ will silently copy to the wrong path.
 echo "Restoring SSH keys..."
-docker exec $CONTAINER_NAME mkdir -p /home/dzikran/.ssh
 docker cp /etc/easypanel/ssh-keys/id_ed25519 $CONTAINER_NAME:/home/dzikran/.ssh/
 docker cp /etc/easypanel/ssh-keys/id_ed25519.pub $CONTAINER_NAME:/home/dzikran/.ssh/
 docker exec $CONTAINER_NAME chmod 600 /home/dzikran/.ssh/id_ed25519

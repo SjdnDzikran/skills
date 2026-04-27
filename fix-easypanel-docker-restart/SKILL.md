@@ -32,7 +32,7 @@ See [implementation.md](implementation.md) for full step-by-step instructions.
 ## Why This Happens
 
 EasyPanel's Docker container uses `/tmp` (ephemeral). On restart:
-- `/root/.ssh/` is wiped (SSH keys lost)
+- `/home/dzikran/.ssh/` is wiped (SSH keys lost)
 - `/tmp/railpack/mise/` is wiped (mise binary lost)
 
 The systemd service restores both from `/etc/easypanel/` backups after Docker starts.
