@@ -7,12 +7,13 @@ CONTAINER_NAME=$(docker ps --filter "name=easypanel" --format "{{.Names}}" | hea
 
 mkdir -p /etc/easypanel/ssh-keys
 
-docker exec $CONTAINER_NAME cat ~/.ssh/id_ed25519 > /etc/easypanel/ssh-keys/id_ed25519
-docker exec $CONTAINER_NAME cat ~/.ssh/id_ed25519.pub > /etc/easypanel/ssh-keys/id_ed25519.pub
+# Container home is /home/dzikran, NOT /root
+docker exec $CONTAINER_NAME cat /home/dzikran/.ssh/id_ed25519 > /etc/easypanel/ssh-keys/id_ed25519
+docker exec $CONTAINER_NAME cat /home/dzikran/.ssh/id_ed25519.pub > /etc/easypanel/ssh-keys/id_ed25519.pub
 chmod 600 /etc/easypanel/ssh-keys/id_ed25519
 chmod 644 /etc/easypanel/ssh-keys/id_ed25519.pub
 
-docker exec $CONTAINER_NAME cat /root/.local/bin/mise > /etc/easypanel/mise
+docker exec $CONTAINER_NAME cat /home/dzikran/.local/bin/mise > /etc/easypanel/mise
 chmod +x /etc/easypanel/mise
 ```
 
@@ -32,12 +33,14 @@ fi
 
 echo "Restoring EasyPanel configuration for $CONTAINER_NAME..."
 
+# IMPORTANT: Container home is /home/dzikran, NOT /root.
+# Using ~/ or /root/ will silently copy to the wrong path.
 echo "Restoring SSH keys..."
-docker exec $CONTAINER_NAME mkdir -p ~/.ssh
-docker cp /etc/easypanel/ssh-keys/id_ed25519 $CONTAINER_NAME:/root/.ssh/
-docker cp /etc/easypanel/ssh-keys/id_ed25519.pub $CONTAINER_NAME:/root/.ssh/
-docker exec $CONTAINER_NAME chmod 600 ~/.ssh/id_ed25519
-docker exec $CONTAINER_NAME chmod 644 ~/.ssh/id_ed25519.pub
+docker exec $CONTAINER_NAME mkdir -p /home/dzikran/.ssh
+docker cp /etc/easypanel/ssh-keys/id_ed25519 $CONTAINER_NAME:/home/dzikran/.ssh/
+docker cp /etc/easypanel/ssh-keys/id_ed25519.pub $CONTAINER_NAME:/home/dzikran/.ssh/
+docker exec $CONTAINER_NAME chmod 600 /home/dzikran/.ssh/id_ed25519
+docker exec $CONTAINER_NAME chmod 644 /home/dzikran/.ssh/id_ed25519.pub
 
 echo "Restoring mise binary..."
 docker exec $CONTAINER_NAME mkdir -p /tmp/railpack/mise
@@ -103,6 +106,7 @@ After generating a new key:
 
 ```bash
 CONTAINER_NAME=$(docker ps --filter "name=easypanel" --format "{{.Names}}" | head -1)
-docker exec $CONTAINER_NAME cat ~/.ssh/id_ed25519 > /etc/easypanel/ssh-keys/id_ed25519
-docker exec $CONTAINER_NAME cat ~/.ssh/id_ed25519.pub > /etc/easypanel/ssh-keys/id_ed25519.pub
+# Container home is /home/dzikran, NOT /root
+docker exec $CONTAINER_NAME cat /home/dzikran/.ssh/id_ed25519 > /etc/easypanel/ssh-keys/id_ed25519
+docker exec $CONTAINER_NAME cat /home/dzikran/.ssh/id_ed25519.pub > /etc/easypanel/ssh-keys/id_ed25519.pub
 ```
