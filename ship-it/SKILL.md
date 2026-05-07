@@ -53,15 +53,17 @@ Also read commit messages between the branches for additional context:
 git log "origin/$to_branch..$from_branch" --oneline
 ```
 
-### Step 3: Fetch and Select Related Issues
+### Step 3: Fetch and Auto-Link Related Issues
 
 ```bash
 gh issue list --state open --limit 50 --json number,title,labels
 ```
 
-Present the list to the user and ask which issues are related to this PR. Collect:
+Fetch the list of open issues and auto-link them to this PR based on the diff and commit messages from Step 2. Match issues by semantic relevance — e.g., if the diff touches auth code and there's an open issue about a login bug, link them. If no issues are relevant, link none. Do not ask the user to pick issues.
+
+Collect:
 - Issue numbers and titles (for PR description)
-- Labels from selected issues (to apply to PR)
+- Labels from matched issues (to apply to PR)
 
 ### Step 4: Generate PR Title and Description
 
@@ -161,7 +163,7 @@ Skip sync and deletion if merge was queued via auto-merge (checks still pending)
 ```
 Step 1: Detect branches + check existing PRs
 Step 2: Fetch diff + commit log
-Step 3: Select related GitHub issues
+Step 3: Auto-link related GitHub issues (no user prompt)
 Step 4: Agent generates conventional-commit PR title + structured description
 Step 5: Create or update PR (with assignee + labels from issues)
 Step 6: Auto merge (squash) + branch cleanup
@@ -174,6 +176,7 @@ Step 6: Auto merge (squash) + branch cleanup
 | Skipping diff check | Always verify there's a diff before proceeding |
 | Not checking existing PRs | Check first to avoid duplicate PRs |
 | Repeating issue numbers | Each issue appears exactly once in description |
+| Asking user to pick issues | Auto-link issues based on diff + issue semantic matching |
 | Generic PR descriptions | Use actual file names, function names, patterns from the diff |
 | Force-deleting unmerged branches | Only delete after confirmed merge |
 | Merging without --auto fallback | Always try --auto first, fallback to direct merge |
