@@ -156,7 +156,14 @@ git push origin --delete "$from_branch"
 
 If branch deletion fails, tell the user to handle it manually with the exact commands.
 
-Skip sync and deletion if merge was queued via auto-merge (checks still pending).
+After running the merge command, **immediately check** if the PR was merged:
+
+```bash
+gh pr view "$pr_number" --json state --jq '.state'
+```
+
+- If `MERGED`: proceed with cleanup below.
+- If `OPEN` (auto-merge queued, checks pending): stop here. Tell the user the PR is queued for auto-merge and they can ask you to clean up the branch later once checks pass. Do NOT run cleanup.
 
 ## Quick Reference
 
