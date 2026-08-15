@@ -1,93 +1,45 @@
 ---
 name: ship-it
-description: Use when the user wants to create, update, or merge a GitHub pull request with an AI-generated title and description based on code diffs and linked issues.
+description: Use when the user wants to create, update, or merge a GitHub pull request — triggers include "ship it", "create a PR", "make a PR", "merge my PR", "merge this branch", or after completing feature work that should ship.
 ---
 
 # Ship It
 
 ## Overview
 
-End-to-end PR workflow: analyze diffs, link GitHub issues, generate a conventional-commit PR title and structured description, create or update the PR with labels and assignee, and optionally merge with branch cleanup. The agent itself generates all PR content — no external AI API calls.
+End-to-end PR workflow: verify there is something to ship, generate a conventional-commit title and structured description, create or update the PR, merge with squash, and clean up. You generate all PR content yourself from the actual diff — technically specific, never generic.
 
 **Announce at start:** "I'm using the ship-it skill to create and manage this PR."
 
 ## When to Use
 
-- User says "create a PR", "make a PR", "ship it", "ship-it"
-- User says "merge my PR" or "merge this branch"
-- User asks to update an existing PR with new description
-- After completing feature work and wanting to ship it
+- User says "ship it", "create a PR", "make a PR", "merge my PR", "merge this branch"
+- Feature work is complete and should be shipped
 
 ## The Process
 
-### Step 1: Detect Branches and Existing PRs
+Use the `gh` CLI; exact commands are your choice except where a strategy is specified.
 
-```
-current_branch = git rev-parse --abbrev-ref HEAD
-default_branch = git remote show origin | awk '/HEAD branch/ {print $NF}'
-```
+### 1. Verify there is something to ship
 
-Ask user to confirm source and target branches (default to current and default).
+Source = current branch, target = repo default branch. Two hard gates before anything else:
 
-Check for existing open PRs:
-```bash
-gh pr list --state open --head "$from_branch" --base "$to_branch" --json number,url -L 1
-```
+- **Non-empty diff** against the target. If none, stop and tell the user.
+- **No duplicate PR.** Check for an existing open PR on the same branches. If one exists, ask whether to update it, merge it, or skip.
 
-If an existing PR is found, ask the user:
-1. **Update** the existing PR (re-generate title/description)
-2. **Merge** the existing PR (skip to Step 6)
-3. **Skip** (create a new PR or cancel)
+### 2. Gather context
 
-### Step 2: Fetch the Diff
+Read the full diff and the commit log between the branches. All PR content comes from these — no guessing.
 
-```bash
-git fetch origin "$to_branch" --quiet
-git diff "origin/$to_branch...$from_branch"
-```
+### 3. Link issues automatically
 
-If no diff, tell the user there's nothing to PR and stop.
+List open GitHub issues and link the ones semantically related to the diff (code areas touched, bug fixed). Do not ask the user to pick. If none relate, link none.
 
-Also read commit messages between the branches for additional context:
-```bash
-git log "origin/$to_branch..$from_branch" --oneline
-```
+### 4. Generate title and description
 
-### Step 3: Fetch and Auto-Link Related Issues
+**Title:** Conventional Commits — `type(scope): subject`, where type is one of `feat`, `fix`, `refactor`, `chore`, `style`, `ci`, `docs`. Subject in imperative mood, short. Scope optional.
 
-```bash
-gh issue list --state open --limit 50 --json number,title,labels
-```
-
-Fetch the list of open issues and auto-link them to this PR based on the diff and commit messages from Step 2. Match issues by semantic relevance — e.g., if the diff touches auth code and there's an open issue about a login bug, link them. If no issues are relevant, link none. Do not ask the user to pick issues.
-
-Collect:
-- Issue numbers and titles (for PR description)
-- Labels from matched issues (to apply to PR)
-
-### Step 4: Generate PR Title and Description
-
-Analyze the diff, commit messages, and linked issues to produce:
-
-#### Title Format
-
-Follow Conventional Commits: `type(scope): subject`
-
-| Type | When to use |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `refactor` | Code restructuring without behavior change |
-| `chore` | Maintenance, dependencies, config |
-| `style` | Formatting, whitespace |
-| `ci` | CI/CD changes |
-| `docs` | Documentation only |
-
-`scope` is optional (e.g., `api`, `ui`, `auth`). `subject` is imperative mood, short.
-
-#### Description Format
-
-Start with a brief summary (2-3 bullet points). Then group changes under these H3 headings — only include sections with relevant changes:
+**Description:** Start with 2-3 summary bullets. Then group changes under only the relevant headings:
 
 - `### New Feature`
 - `### Refactoring & Architectural Changes`
@@ -95,109 +47,38 @@ Start with a brief summary (2-3 bullet points). Then group changes under these H
 - `### Performance Improvements`
 - `### Maintenance & Chores`
 
-Under each heading:
-- Primary bullet: **Bold title:** detailed explanation of the change and its impact.
-- Nested bullet for issue reference: `Fixes #N` or `Closes #N`
+Each bullet: **Bold title:** detailed explanation naming actual files, functions, and patterns from the diff. Reference issues in a nested bullet as `Fixes #N` or `Closes #N`.
 
-**Rules:**
-- Each issue number appears **once** only in the entire description. Merge related changes into one bullet.
-- No introductory sentences — start directly with the summary or first heading.
-- Be technically specific: mention files, functions, patterns changed.
+**Hard rule:** each issue number appears exactly once in the entire description — merge related changes into one bullet. No introductory sentences.
 
-### Step 5: Create or Update the PR
+Show the generated title and description to the user, then proceed.
 
-```bash
-gh api user --jq '.login'  # get assignee
-```
+### 5. Create or update the PR
 
-Build the PR command:
-```bash
-gh pr create \
-  --base "$to_branch" \
-  --head "$from_branch" \
-  --title "$pr_title" \
-  --body "$pr_body" \
-  --assignee "$assignee" \
-  --label "label1" --label "label2"  # from linked issues
-```
+Create the PR targeting the right branches, assign the current user, and apply labels carried over from the linked issues. If updating an existing PR, edit its title/body/assignee/labels instead of creating a new one. Show the user the PR URL.
 
-If updating an existing PR:
-```bash
-gh pr edit "$pr_number" --title "$pr_title" --body "$pr_body" --assignee "$assignee" --label "label1"
-```
+### 6. Merge and clean up
 
-Show the user the PR URL when done.
+Merge with squash. Use auto-merge if the repo supports it (`gh pr merge --squash --auto`); if unsupported, retry without `--auto`.
 
-### Step 6: Merge and Cleanup
+After running the merge command, check the PR state:
 
-After creating/updating the PR, immediately merge using squash:
+- **MERGED:** sync the target branch locally (`git pull --ff-only`) and delete the feature branch, local and remote.
+- **OPEN** (auto-merge queued on pending checks): stop. Tell the user the PR is queued and they can ask for cleanup once checks pass.
 
-```bash
-gh pr merge "$pr_number" --squash --auto
-```
-
-Use `--auto` so if checks are pending, it queues auto-merge. If `--auto` is not supported (repo settings), retry without it.
-
-#### Post-Merge Cleanup
-
-After successful merge, immediately clean up:
-
-1. Sync base branch:
-```bash
-git switch "$to_branch"
-git pull --ff-only
-```
-
-2. Delete branches:
-```bash
-git branch -D "$from_branch"
-git push origin --delete "$from_branch"
-```
-
-If branch deletion fails, tell the user to handle it manually with the exact commands.
-
-After running the merge command, **immediately check** if the PR was merged:
-
-```bash
-gh pr view "$pr_number" --json state --jq '.state'
-```
-
-- If `MERGED`: proceed with cleanup below.
-- If `OPEN` (auto-merge queued, checks pending): stop here. Tell the user the PR is queued for auto-merge and they can ask you to clean up the branch later once checks pass. Do NOT run cleanup.
-
-## Quick Reference
-
-```
-Step 1: Detect branches + check existing PRs
-Step 2: Fetch diff + commit log
-Step 3: Auto-link related GitHub issues (no user prompt)
-Step 4: Agent generates conventional-commit PR title + structured description
-Step 5: Create or update PR (with assignee + labels from issues)
-Step 6: Auto merge (squash) + branch cleanup
-```
+Only delete branches after confirming the merge. If a step fails, hand the user the exact commands to finish manually.
 
 ## Common Mistakes
 
 | Mistake | Fix |
 |---------|-----|
-| Skipping diff check | Always verify there's a diff before proceeding |
-| Not checking existing PRs | Check first to avoid duplicate PRs |
-| Repeating issue numbers | Each issue appears exactly once in description |
-| Asking user to pick issues | Auto-link issues based on diff + issue semantic matching |
-| Generic PR descriptions | Use actual file names, function names, patterns from the diff |
-| Force-deleting unmerged branches | Only delete after confirmed merge |
-| Merging without --auto fallback | Always try --auto first, fallback to direct merge |
+| Creating a PR with no diff | Verify the diff first — hard gate |
+| Duplicate PRs | Check for existing open PRs first |
+| Repeating issue numbers | Each issue appears exactly once |
+| Asking user to pick issues | Auto-link by semantic match |
+| Generic descriptions | Name actual files, functions, patterns |
+| Deleting branches before confirmed merge | Verify `MERGED` state first |
 
 ## Red Flags
 
-**Never:**
-- Create a PR with no diff
-- Delete branches before confirming merge success
-- Ask for merge strategy or cleanup confirmation (always auto)
-
-**Always:**
-- Verify diff exists before creating PR
-- Show the generated title/description to user before creating
-- Apply labels from linked issues
-- Auto-merge with squash after PR creation
-- Auto-cleanup branches after confirmed merge
+Never create a PR with no diff. Never delete branches before confirming merge success. Never ask about merge strategy or cleanup — squash and cleanup are automatic.
