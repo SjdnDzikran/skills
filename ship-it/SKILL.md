@@ -37,6 +37,8 @@ List open GitHub issues and link the ones semantically related to the diff (code
 
 ### 4. Generate title and description
 
+**Language:** Before generating anything, ask the user whether to write the PR description in English or Bahasa Indonesia, then generate the description in that language. The title always stays in English.
+
 **Title:** Conventional Commits — `type(scope): subject`, where type is one of `feat`, `fix`, `refactor`, `chore`, `style`, `ci`, `docs`. Subject in imperative mood, short. Scope optional.
 
 **Description:** Group all changes under only the relevant headings:
