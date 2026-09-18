@@ -39,17 +39,15 @@ List open GitHub issues and link the ones semantically related to the diff (code
 
 **Title:** Conventional Commits — `type(scope): subject`, where type is one of `feat`, `fix`, `refactor`, `chore`, `style`, `ci`, `docs`. Subject in imperative mood, short. Scope optional.
 
-**Description:** Start with 2-3 summary bullets. Then group changes under only the relevant headings:
+**Description:** Group all changes under only the relevant headings:
 
-- `### New Feature`
-- `### Refactoring & Architectural Changes`
-- `### Bug Fixes`
-- `### Performance Improvements`
-- `### Maintenance & Chores`
+- `### Added`
+- `### Changed`
+- `### Fixed`
 
-Each bullet: **Bold title:** detailed explanation naming actual files, functions, and patterns from the diff. Reference issues in a nested bullet as `Fixes #N` or `Closes #N`.
+Each entry: one straightforward sentence naming actual files, functions, and patterns from the diff, e.g. "Fixed model switching and context loss issues during active conversations". End each entry with its related issue numbers in parentheses, e.g. `(#123, #456)`.
 
-**Hard rule:** each issue number appears exactly once in the entire description — merge related changes into one bullet. No introductory sentences.
+**Hard rule:** each issue number appears exactly once in the entire description — merge related changes into one entry. No introductory sentences, no summary bullets, no attributions.
 
 Show the generated title and description to the user, then proceed.
 
