@@ -37,17 +37,20 @@ List open GitHub issues and link the ones semantically related to the diff (code
 
 ### 4. Generate title and description
 
-**Language:** Before generating anything, ask the user whether to write the PR description in English or Bahasa Indonesia, then generate the description in that language. The title always stays in English.
+**Language and audience:** Before generating anything, ask the user two questions:
+
+1. Should the PR description be in English or Bahasa Indonesia? (The title always stays in English.)
+2. Is the description developer-facing or user-facing?
+
+Then generate the description in that language for that audience.
 
 **Title:** Conventional Commits — `type(scope): subject`, where type is one of `feat`, `fix`, `refactor`, `chore`, `style`, `ci`, `docs`. Subject in imperative mood, short. Scope optional.
 
-**Description:** Group all changes under only the relevant headings:
-
-- `### Added`
-- `### Changed`
-- `### Fixed`
+**Description:** Group all changes under only the relevant headings, always in this order: `### Added`, then `### Changed`, then `### Fixed`.
 
 Each entry: one straightforward sentence naming actual files, functions, and patterns from the diff, e.g. "Fixed model switching and context loss issues during active conversations". End each entry with its related issue numbers in parentheses, e.g. `(#123, #456)`.
+
+**User-facing variant:** when the user chose user-facing, write every entry for end users who know nothing about the codebase — explain what changed in the app's behavior and why it matters to them. No file names, function names, CI internals, or engineering jargon.
 
 **Hard rule:** each issue number appears exactly once in the entire description — merge related changes into one entry. No introductory sentences, no summary bullets, no attributions.
 
