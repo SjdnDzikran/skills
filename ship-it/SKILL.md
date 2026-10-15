@@ -5,83 +5,52 @@ description: Use when the user wants to create, update, or merge a GitHub pull r
 
 # Ship It
 
-## Overview
-
-End-to-end PR workflow: verify there is something to ship, generate a conventional-commit title and structured description, create or update the PR, merge with squash, and clean up. You generate all PR content yourself from the actual diff — technically specific, never generic.
+All PR content comes from the actual work — technically specific, never generic.
 
 **Announce at start:** "I'm using the ship-it skill to create and manage this PR."
 
-## When to Use
+Source = current branch, target = repo default branch.
 
-- User says "ship it", "create a PR", "make a PR", "merge my PR", "merge this branch"
-- Feature work is complete and should be shipped
+## 1. Draft
 
-## The Process
+The conversation is the primary source. When the work happened in this thread, write the title and description from what you already know; read the diff only to fill gaps, confirming file and issue names against `git diff <target>...HEAD`.
 
-Use the `gh` CLI; exact commands are your choice except where a strategy is specified.
+One-line check while drafting — surface a result only when it trips:
 
-### 1. Verify there is something to ship
+- No open PR on this branch yet: `gh pr list --head <branch>` returns none. One exists → adopt it: update it in place per step 3 instead of creating a duplicate.
 
-Source = current branch, target = repo default branch. Two hard gates before anything else:
+**Link issues:** list open GitHub issues and link the ones the work fixed or touched — pick the semantic matches yourself.
 
-- **Non-empty diff** against the target. If none, stop and tell the user.
-- **No duplicate PR.** Check for an existing open PR on the same branches. If one exists, ask whether to update it, merge it, or skip.
+## 2. Title and description
 
-### 2. Gather context
+Language and audience come from the project type — derive it, zero questions:
 
-Read the full diff and the commit log between the branches. All PR content comes from these — no guessing.
+| Project | Description language | Audience |
+|---|---|---|
+| Flutter or mobile app (`pubspec.yaml` present, or `react-native` in package.json) | Bahasa Indonesia | user-facing |
+| Everything else | English | developer-facing |
 
-### 3. Link issues automatically
+An explicit user instruction in the conversation overrides the table.
 
-List open GitHub issues and link the ones semantically related to the diff (code areas touched, bug fixed). Do not ask the user to pick. If none relate, link none.
+**Title:** Conventional Commits, always English — `type(scope): subject`, type one of `feat`, `fix`, `refactor`, `chore`, `style`, `ci`, `docs`; subject imperative and short; scope optional.
 
-### 4. Generate title and description
+**Description:** the relevant headings only, in order — `### Added`, `### Changed`, `### Fixed` — each entry one sentence naming actual files, functions, and patterns from the work, ending with its issue numbers in parentheses, e.g. `(#123, #456)`. Each issue number appears exactly once in the entire description; merge related changes into one entry. Headings and entries only — intro sentences, summary bullets, and attributions live elsewhere.
 
-**Language and audience:** Before generating anything, ask the user two questions:
+**user-facing** entries explain what changed in the app's behavior and why it matters to end users; engineering artifacts (files, functions, CI internals) belong in developer-facing entries.
 
-1. Should the PR description be in English or Bahasa Indonesia? (The title always stays in English.)
-2. Is the description developer-facing or user-facing?
+Show the draft in one message and proceed in the same turn; a reply steers a correction instead of a gate. The message names the intent: with merge intent, "Creating and squash-merging now unless you object"; without it, "Creating the PR now" — the run stops at the URL from step 3.
 
-Then generate the description in that language for that audience.
+## 3. Create
 
-**Title:** Conventional Commits — `type(scope): subject`, where type is one of `feat`, `fix`, `refactor`, `chore`, `style`, `ci`, `docs`. Subject in imperative mood, short. Scope optional.
+`gh pr create` against the target branch; assign the current user. **Labels:** apply the linked issues' labels; when none relate to the work, derive one from the change type (`fix` → `bug`, `feat` → `enhancement`, `docs` → `documentation`) and create it first with `gh label create "<name>"`. An existing open PR gets edited in place — title, body, assignee, labels. Report the PR URL.
 
-**Description:** Group all changes under only the relevant headings, always in this order: `### Added`, then `### Changed`, then `### Fixed`.
+## 4. Merge and clean up
 
-Each entry: one straightforward sentence naming actual files, functions, and patterns from the diff, e.g. "Fixed model switching and context loss issues during active conversations". End each entry with its related issue numbers in parentheses, e.g. `(#123, #456)`.
+**Merge gate:** merging requires explicit merge intent from the user — "ship it", "merge my PR", "merge this branch", or a direct confirmation. A PR created on the agent's own initiative, or from a plain "create a PR" request, stops at the URL from step 3: the PR sits open and ready. With merge intent:
 
-**User-facing variant:** when the user chose user-facing, write every entry for end users who know nothing about the codebase — explain what changed in the app's behavior and why it matters to them. No file names, function names, CI internals, or engineering jargon.
+A draft PR gets marked ready first (`gh pr ready`). Squash-merge: `gh pr merge --squash --auto`; unsupported → retry without `--auto`.
 
-**Hard rule:** each issue number appears exactly once in the entire description — merge related changes into one entry. No introductory sentences, no summary bullets, no attributions.
+- **MERGED:** `git pull --ff-only` the target branch, then delete the feature branch locally and remotely.
+- **OPEN** (auto-merge queued on checks): report the queue; the user returns for cleanup after checks pass.
 
-Show the generated title and description to the user, then proceed.
-
-### 5. Create or update the PR
-
-Create the PR targeting the right branches, assign the current user, and apply labels carried over from the linked issues. If updating an existing PR, edit its title/body/assignee/labels instead of creating a new one. Show the user the PR URL.
-
-### 6. Merge and clean up
-
-Merge with squash. Use auto-merge if the repo supports it (`gh pr merge --squash --auto`); if unsupported, retry without `--auto`.
-
-After running the merge command, check the PR state:
-
-- **MERGED:** sync the target branch locally (`git pull --ff-only`) and delete the feature branch, local and remote.
-- **OPEN** (auto-merge queued on pending checks): stop. Tell the user the PR is queued and they can ask for cleanup once checks pass.
-
-Only delete branches after confirming the merge. If a step fails, hand the user the exact commands to finish manually.
-
-## Common Mistakes
-
-| Mistake | Fix |
-|---------|-----|
-| Creating a PR with no diff | Verify the diff first — hard gate |
-| Duplicate PRs | Check for existing open PRs first |
-| Repeating issue numbers | Each issue appears exactly once |
-| Asking user to pick issues | Auto-link by semantic match |
-| Generic descriptions | Name actual files, functions, patterns |
-| Deleting branches before confirmed merge | Verify `MERGED` state first |
-
-## Red Flags
-
-Never create a PR with no diff. Never delete branches before confirming merge success. Never ask about merge strategy or cleanup — squash and cleanup are automatic.
+Branches get deleted only with the merge confirmed. Any failure → hand over the exact commands to finish manually.
