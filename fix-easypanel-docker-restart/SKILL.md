@@ -32,7 +32,7 @@ See [implementation.md](implementation.md) for full step-by-step instructions.
 ## Why This Happens
 
 EasyPanel's Docker container uses `/tmp` (ephemeral). On restart:
-- `/root/.ssh/` is wiped (SSH keys lost)
+- `/home/dzikran/.ssh/` is wiped (SSH keys lost)
 - `/tmp/railpack/mise/` is wiped (mise binary lost)
 
 The systemd service restores both from `/etc/easypanel/` backups after Docker starts.
@@ -45,3 +45,4 @@ The systemd service restores both from `/etc/easypanel/` backups after Docker st
 | Wrong mise version path | Match the version Railpack expects (check logs) |
 | Not updating backup after rotating SSH keys | Re-run backup step after key rotation |
 | Service runs before Docker is ready | `After=docker.service` and `Requires=docker.service` handle this |
+| Using `~` or `/root/` for SSH paths in container | EasyPanel container home is `/home/dzikran`, not `/root`. Always use explicit `/home/dzikran/.ssh/` paths — `docker cp` to `/root/.ssh/` silently copies to wrong location |
