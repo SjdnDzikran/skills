@@ -54,3 +54,15 @@ A draft PR gets marked ready first (`gh pr ready`). Squash-merge: `gh pr merge -
 - **OPEN** (auto-merge queued on checks): report the queue; the user returns for cleanup after checks pass.
 
 Branches get deleted only with the merge confirmed. Any failure → hand over the exact commands to finish manually.
+
+## 5. Promote
+
+When project instructions call for promoting the merged work with a fast-forward (e.g. `staging` → `master` via `git merge --ff-only`), do it in the same run as the merge.
+
+**Diverged branches:** when the fast-forward fails because the production branch has commits the integration branch lacks (`git merge-base --is-ancestor origin/<prod> origin/<integration>` fails), sync them without asking:
+
+1. Branch `chore/sync-<integration>-<prod>-<pr#>` from `origin/<integration>` and run `git merge --no-ff origin/<prod>`.
+2. Open a PR into the integration branch titled `chore: sync <integration> with <prod>`, then merge it with a **merge commit** (`gh pr merge --merge --delete-branch`), never a squash, because a squash recreates the divergence.
+3. Fast-forward the production branch to the integration tip and push it, then confirm the two tips match.
+
+Mention in the report what the diverging commits were. Stop and ask only when the sync merge has conflicts or changes files (`git diff origin/<integration> HEAD` is not empty), because then the production branch carries code the integration branch lacks.
